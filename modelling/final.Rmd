@@ -1,0 +1,218 @@
+---
+title: "Multiple regression in R"
+output: word_document
+---
+
+# We are applying regression to the data attributes then compare the models to structure the best way to counter how players use their Gold in the multiple game structures within # the data sets, and also to find ways to improve or limit the use of the spent gold in the games. 
+# Implementation: 
+
+```{r}
+# read directory
+setwd("D:/Desktop/regression_R/modelling")
+
+```
+Define and access the data sets. 
+# initialize the data variables
+```{r}
+# the match data
+match_data <- read.csv("match.csv")
+# the players data
+players_data <- read.csv("players.csv")
+# the players ratings data
+players_ratings <- read.csv("player_ratings.csv")
+```
+
+
+# View the data properties
+This helps us identify the structure and properties of the data.
+```{r}
+summary(match_data)
+```
+
+```{r}
+summary(players_data)
+```
+
+```{r}
+summary(players_ratings)
+```
+
+
+
+# the structure of the data
+The structure of the match_data
+
+```{r}
+str(match_data)
+```
+Structure of the players_data
+```{r}
+str(players_data)
+``` 
+The structure of players_ratings data 
+```{r}
+str(players_ratings)
+```
+
+
+## sub-setting the data set
+The data sets are huge and therefore we need to use a smaller number of rows for each data to get faster running. when we use the whole data, R runs out of memory
+
+```{r}
+match_data <- head(match_data, 600)
+players_data <- head(players_data, 600)
+players_ratings <- head(players_ratings, 600)
+
+```
+
+## Plots
+We can then plot the data players  and the gold spent
+```{r}
+hist(players_data$gold_spent)
+```
+
+The amount of gold each player has before use.
+```{r}
+hist(players_data$gold)
+```
+How the player uses their gold per minute and in what amounts
+```{r}
+hist(players_data$gold_per_min)
+```
+
+# Generate test and train data
+# match data
+We are generating a train and test data to help us identify perfect correlation matrix in our next step. 
+This helps identofy the various p-values.
+
+```{r}
+set.seed(100)
+match <- sample(1:nrow(match_data), .75 * nrow(match_data))
+train <- match_data[match, ]
+test <- match_data[-match, ]
+
+# players data
+players <- sample(1:nrow(players_data), .75 * nrow(players_data))
+train_players <-players_data[players, ]
+test_players <- players_data[-players, ]
+
+# ratings data
+ratings <- sample(1:nrow(players_ratings), .75 * nrow(players_ratings))
+train_ratings <- players_ratings[ratings, ]
+test_ratings <- players_ratings[-ratings, ]
+
+```
+# Modelling the data all together
+
+# Models
+# Match Model
+create the first model using the train data in the match_data data set
+```{r}
+model_match <- lm(game_mode ~ radiant_win, data = train)
+summary(model_match)
+```
+# Players Model
+create the model using the train data in the players data set
+```{r}
+model_players <- lm(gold_spent ~ player_slot + gold, data = train_players)
+summary(model_players)
+```
+# Ratings Model
+create the model of the ratings data using the train data
+```{r}
+model_ratings <- lm(total_matches ~ total_wins + trueskill_mu, data = players_ratings)
+summary(model_ratings)
+```
+
+
+# Model comparison
+For the comparison of the three models generated, the anova model will be used to compare the models.
+We are going to merge the three models created into one model using the anova algorithm. Its our simplest way to get a more predictable value.
+
+```{r}
+model_fit <- anova(model_ratings, model_match, model_players)
+```
+
+# Plots
+We can then plot out models to identify the various structure and summarize the functionality
+```{r}
+par(mfrow = c(2,2))
+plot(model_ratings)
+```
+
+```{r}
+plot(model_players)
+```
+```{r}
+plot(model_match)
+```
+
+
+# Model prediction 
+After merging the dataset, we can then predict the functionalities of the data.
+```{r}
+anova_model <- anova(model_match, model_players, players_ratings)
+
+```
+# Prediction
+Using the predict command we then realise the various structure using the cbind command in R
+```{r}
+pred <- predict(model_match, test)
+pred2 <- predict(model_players, test_players)
+pred3 <- predict(model_ratings, test_ratings)
+
+pred1 <- data.frame(cbind(actuals=test$match_id, predicteds = pred))
+pred_2 <- data.frame(cbind(actuals=test_players$gold_spent, predicteds = pred2))
+pred_3 <- data.frame(cbind(actuals = test_ratings$total_wins, predicteds = pred3))
+```
+# Diagnostic Measures on the models
+find the measures of the data model match data
+```{r}
+AIC(model_match)
+```
+ Find the measures of the model players
+```{r}
+AIC(model_players)
+```
+Find the measures of the model ratings
+```{r}
+AIC(model_ratings)
+
+```
+# Accuracy
+We determine the accuracy of the data using the predicted value and the actual for the three models and the test data columns.
+```{r}
+pred1 <- data.frame(cbind(actuals=test$match_id, predicteds = pred))
+pred_2 <- data.frame(cbind(actuals=test_players$gold_spent, predicteds = pred2))
+pred_3 <- data.frame(cbind(actuals = test_ratings$total_wins, predicteds = pred3))
+
+```
+
+# Correlation Accuracy
+We then find the correlation matrix of the three models using  "cor"
+```{r}
+accuracy1 <- cor(pred1)
+accuracy2 <- cor(pred_2)
+accuracy3 <- cor(pred_3)
+```
+
+
+```{r}
+head(accuracy1)
+```
+
+```{r}
+head(accuracy2)
+```
+
+```{r}
+head(accuracy3)
+```
+
+# Data Analysis and Results
+Most of the actual predicted data have the actuals interpreted to 1.0 just as in our previous modeling .Therefore the accuracy still remains to be 90.4% in our predicted models. 
+In multiple correlation matrix, the actuals and the predicted are structured to give a constant figure, therefore the way the actuals are emulated in the matrix, they print a single positive 1.0 that indicates all the values and summation of the data is equal to the previous used model. if the values were a negative, then our accuracy would be different. 
+
+# Discussion 
+
+In our previous assessment, an actual dependable value is achieved by using the KNN algorithm. In this category, we are implementing the multiple regression that models all the structure in the data sets and create an accuracy value depending on the prediction model. A limitation of this model is that we assume all the data is complete and that the model correlation is a causation. 
